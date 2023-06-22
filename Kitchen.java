@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -16,9 +17,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
-
-
-
+import javax.swing.JLabel;
+import javax.swing.JTextField;
 
 
 public class Kitchen extends JFrame {
@@ -26,13 +26,17 @@ public class Kitchen extends JFrame {
 	private JPanel contentPane;
 	private final static int PORT = 5005;
 	private final static String SERVER = "127.0.0.1";
-	Socket socket;
-	private Thread2 thread;
+	private Socket socket;
+	private ThreadtoCli threadtocli;
+	private ArrayList<ArrayList>alttc=threadtocli.getAlcm();
 	private ObjectInputStream inObjeto;
 	private JTable table;
 	private JScrollPane scrollPane;
-	private String matrizInfo[][];
-	String[] columnas = {"Nombre", "Precio", "Cantidad"};
+	private JLabel lblnpedidos;
+	private JTextField textFnpedidos;
+	private Tools tu= new Tools();
+	
+	
 
 	/**
 	 * Launch the application.
@@ -70,18 +74,13 @@ public class Kitchen extends JFrame {
 					System.out.println("Client -> Start");  
 					socket = new Socket(SERVER, PORT);//open socket 
 					inObjeto = new ObjectInputStream( socket.getInputStream());
-					thread= new Thread2(inObjeto, table);
-					thread.start();
+					threadtocli= new ThreadtoCli(inObjeto, table,textFnpedidos);
+					threadtocli.start();//usar el comandmanager en el thread2 que vaya guardando ahi todo, luego con el boton hecho vas borrando la primera comanda y sale la siguiente y la vas a mandar a la barra para que se entregue en server habra esperando y para entregar
+					
 					
 				}
 				catch (IOException ex) {        
 					System.err.println("Client -> " + ex.getMessage());   }
-					/*} catch (ClassNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}*/ 
-
-	
 			}
 		});
 		Clientb.setBounds(656, 11, 105, 27);
@@ -112,11 +111,43 @@ public class Kitchen extends JFrame {
 				{null, null, null},
 			},
 			new String[] {
-				"Nombre", "Precio", "Cantidad"
+				"Quantity", "Name", "Price"
 			}
 		));
 		scrollPane.setViewportView(table);
+		
+		lblnpedidos = new JLabel("Nº Orders");
+		lblnpedidos.setBounds(538, 17, 59, 14);
+		contentPane.add(lblnpedidos);
+		
+		textFnpedidos = new JTextField();
+		textFnpedidos.setText("0");
+		textFnpedidos.setBounds(541, 35, 39, 20);
+		contentPane.add(textFnpedidos);
+		textFnpedidos.setColumns(10);
+		
+		JButton OrderReadyB = new JButton("Order Ready");
+		OrderReadyB.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(alttc.size()>1) {
+					alttc.remove(0);
+				System.out.println(alttc.get(0).toString());
+				int size2=alttc.size();
+				textFnpedidos.setText(String.valueOf(size2));
+				tu.ModTab(table, alttc.get(0));
+				}
+				else if(alttc.size()==1) {
+					alttc.remove(0);
+					int size2=alttc.size();
+					textFnpedidos.setText(String.valueOf(size2));
+					tu.ModTabEmpty(table);
+				}
+			}
+		});
+		OrderReadyB.setBounds(510, 66, 105, 23);
+		contentPane.add(OrderReadyB);
+		
 
 	}
-
+	
 }

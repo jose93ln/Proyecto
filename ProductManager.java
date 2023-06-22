@@ -1,8 +1,9 @@
 package p1;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class ProductManager {
+public class ProductManager implements Serializable {
 	private ArrayList<Products> proal;
 	private BDproductosDAO bdal= new BDproductosDAO();
 

@@ -19,7 +19,12 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,19 +42,26 @@ import javax.swing.border.LineBorder;
 import java.awt.Color;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import java.awt.Window.Type;
+import javax.swing.JLabel;
 
-public class Bar extends JFrame {
+public class Bar extends JFrame  {
 
 	private JPanel contentPane;
 	private final static int PORT = 5005;
-	Socket client;
+	private Socket client;
 	private ObjectOutputStream outObjeto;
+	private DataInputStream input; 
 	private ProductManager pm = new ProductManager();
 	private BDproductosDAO bdDAO=new BDproductosDAO();
 	private JTable tableped;
 	private JTable tableprod;
 	private JTextField textFTprice;
 	private Tools tu= new Tools();
+	private JTextField textFToDeliver;
+	private JTextField textFDelivered;
+	private ThreadtoServ threadtoserv;
+	
 	
 
 	/**
@@ -72,33 +84,16 @@ public class Bar extends JFrame {
 	 * Create the frame.
 	 */
 	public Bar () {
+		setTitle("Bar");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 769, 328);
 		contentPane = new JPanel();
+		contentPane.setBackground(new Color(128, 128, 128));
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
-
-		//
-		/*ImageIcon classicBurgerIcon = new ImageIcon("images/clasic.png");
-		Image classicBurgerImage = classicBurgerIcon.getImage();
-		Image resizedClassicBurgerImage = classicBurgerImage.getScaledInstance(Classic_BurgerB, buttonHeight, Image.SCALE_SMOOTH);
-		ImageIcon resizedClassicBurgerIcon = new ImageIcon(resizedClassicBurgerImage);
-
-		classicBurgerButton.setIcon(resizedClassicBurgerIcon);
-
-		ImageIcon cheeseburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon baconburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon vegburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon chickenburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon friesIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon onionIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon sodaburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon waterburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		ImageIcon desertburgerIcon = new ImageIcon("ruta_de_la_imagen");
-		//
-		 */
+////****
 		JButton Classic_BurgerB = new JButton("+");
 		Classic_BurgerB.setBounds(440, 34, 58, 15);
 		Classic_BurgerB.addActionListener(new ActionListener() {
@@ -319,7 +314,7 @@ public class Bar extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				try {
 
-
+					Serverb.setEnabled(false);
 					ServerSocket server = new ServerSocket(PORT);//
 					System.out.println("Server started");
 					bdDAO.dinButton(tableprod);
@@ -328,6 +323,9 @@ public class Bar extends JFrame {
 					System.out.println("connected to client: " + client.getInetAddress());
 					client.setSoLinger (true, 10);
 					outObjeto = new ObjectOutputStream( client.getOutputStream());
+					input = new DataInputStream( new DataInputStream(client.getInputStream()));
+					threadtoserv= new ThreadtoServ(input, textFToDeliver);
+					threadtoserv.start();
 
 
 
@@ -339,17 +337,13 @@ public class Bar extends JFrame {
 		});
 
 		contentPane.add(Serverb);
-		//
 
 		JButton Sendb = new JButton("Send");
 		Sendb.setBounds(672, 241, 71, 21);
 		Sendb.addActionListener(new ActionListener() {	
 			public void actionPerformed(ActionEvent e) {
 				try {
-					System.out.println("syso "+pm.getAl());
-					//	
-
-					outObjeto.writeObject(pm.getAl());//esto lo manda al output, luego el socket lo xucla
+					outObjeto.writeObject(pm.getAl());
 
 					outObjeto.flush();
 					outObjeto.reset();
@@ -422,12 +416,55 @@ public class Bar extends JFrame {
 		contentPane.add(textFTprice);
 		textFTprice.setColumns(10);
 		
-	
+		JLabel lbltodeliver = new JLabel("Orders to deliver");
+		lbltodeliver.setBounds(51, 211, 106, 14);
+		contentPane.add(lbltodeliver);
+		
+		JLabel lbldelivered = new JLabel("Orders delivered");
+		lbldelivered.setBounds(286, 211, 97, 14);
+		contentPane.add(lbldelivered);
+		
+		textFToDeliver = new JTextField();
+		textFToDeliver.setText("0");
+		textFToDeliver.setBounds(68, 236, 39, 20);
+		contentPane.add(textFToDeliver);
+		textFToDeliver.setColumns(10);
+		
+		textFDelivered = new JTextField();
+		textFDelivered.setText("0");
+		textFDelivered.setBounds(308, 236, 39, 20);
+		contentPane.add(textFDelivered);
+		textFDelivered.setColumns(10);
+		
+		JButton DeliveredB = new JButton("Delivered!");
+		DeliveredB.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String sttodeli=textFToDeliver.getText();
+				int numtodel = Integer.parseInt(sttodeli);
+				String stdeli=textFDelivered.getText();
+				int numdel = Integer.parseInt(stdeli);
+				if(numtodel>0) {
+
+					numtodel--;
+					textFToDeliver.setText(String.valueOf(numtodel));
+					numdel++;
+					textFDelivered.setText(String.valueOf(numdel));
+
+				}
+			}
+		});
+		DeliveredB.setBounds(117, 236, 97, 23);
+		contentPane.add(DeliveredB);
+		
+		
 
 		//
-
+		
+		
+	
 
 	}
+
 
 
 	public void ProdRep (String name) {
@@ -435,13 +472,10 @@ public class Bar extends JFrame {
 		boolean encontrado = false;
 
 		for (int i = 0; i < pm.getAl().size(); i++) {
-			System.out.println(i+pm.getAl().get(i).getName());
 
 			if (name.equals(pm.getAl().get(i).getName())) {
 
-				System.out.println("cantidad presuma "+pm.getAl().get(i).getQuantity());
 				pm.getAl().get(i).setQuantity(pm.getAl().get(i).getQuantity() + 1);
-				System.out.println("cantidad postsuma "+i+pm.getAl().get(i).getQuantity());
 				pm.getAl().get(i).setpTotal(pm.getAl().get(i).getPrice()*pm.getAl().get(i).getQuantity());
 				encontrado = true;
 				tu.ModTab(tableped, pm.getAl());
@@ -459,13 +493,10 @@ public class Bar extends JFrame {
 	public void ProdSubst (String name) {
 
 		for (int i = 0; i < pm.getAl().size(); i++) {
-			System.out.println(i+pm.getAl().get(i).getName());
 
 			if (name.equals(pm.getAl().get(i).getName())) {
 
-				System.out.println("cantidad preresta "+pm.getAl().get(i).getQuantity());
 				pm.getAl().get(i).setQuantity(pm.getAl().get(i).getQuantity() -1);
-				System.out.println("cantidad postresta "+i+pm.getAl().get(i).getQuantity());
 				pm.getAl().get(i).setpTotal(pm.getAl().get(i).getPrice()*pm.getAl().get(i).getQuantity());
 				if(pm.getAl().get(i).getQuantity()<1){
 					pm.getAl().remove(i);
@@ -476,14 +507,14 @@ public class Bar extends JFrame {
 		tu.ModTab(tableped, pm.getAl());
 		TotalP();
 	}
-	
+
 	public void TotalP () {
 		double tp=0;
 		String newtp="";
 		DecimalFormat formato = new DecimalFormat("#.00");
 		for (int i = 0; i < pm.getAl().size(); i++) {
 			tp+=pm.getAl().get(i).getpTotal();
-			
+
 			newtp = formato.format(tp);
 		}
 		textFTprice.setText(newtp);

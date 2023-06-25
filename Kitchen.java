@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
@@ -28,14 +29,15 @@ public class Kitchen extends JFrame {
 	private final static String SERVER = "127.0.0.1";
 	private Socket socket;
 	private ThreadtoCli threadtocli;
-	private ArrayList<ArrayList>alttc=threadtocli.getAlcm();
 	private ObjectInputStream inObjeto;
-	private JTable table;
-	private JScrollPane scrollPane;
+	private DataOutputStream output;
+	private JTable tableOrd;
+	private JScrollPane sPOrd;
 	private JLabel lblnpedidos;
 	private JTextField textFnpedidos;
 	private Tools tu= new Tools();
-	
+	private JTable tableLastOrd;
+	private int count=0;
 	
 
 	/**
@@ -58,6 +60,7 @@ public class Kitchen extends JFrame {
 	 * Create the frame.
 	 */
 	public Kitchen() {
+		setTitle("Kitchen");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 787, 316);
 		contentPane = new JPanel();
@@ -69,14 +72,16 @@ public class Kitchen extends JFrame {
 		
 		JButton Clientb = new JButton("Client");
 		Clientb.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {     
+			public void actionPerformed(ActionEvent e) { 
+				Clientb.setEnabled(false);
 				try {            
 					System.out.println("Client -> Start");  
 					socket = new Socket(SERVER, PORT);//open socket 
 					inObjeto = new ObjectInputStream( socket.getInputStream());
-					threadtocli= new ThreadtoCli(inObjeto, table,textFnpedidos);
-					threadtocli.start();//usar el comandmanager en el thread2 que vaya guardando ahi todo, luego con el boton hecho vas borrando la primera comanda y sale la siguiente y la vas a mandar a la barra para que se entregue en server habra esperando y para entregar
-					
+					output = new DataOutputStream(socket.getOutputStream());//to send
+					threadtocli= new ThreadtoCli(inObjeto, tableOrd,textFnpedidos);
+					threadtocli.start();
+				
 					
 				}
 				catch (IOException ex) {        
@@ -85,15 +90,15 @@ public class Kitchen extends JFrame {
 		});
 		Clientb.setBounds(656, 11, 105, 27);
 		contentPane.add(Clientb);
-		scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 11, 485, 255);
-		contentPane.add(scrollPane);
+		sPOrd = new JScrollPane();
+		sPOrd.setBounds(10, 11, 485, 255);
+		contentPane.add(sPOrd);
 
 
 
-		scrollPane.setViewportView(table);
-		table = new JTable();
-		table.setModel(new DefaultTableModel(
+		sPOrd.setViewportView(tableOrd);
+		tableOrd = new JTable();
+		tableOrd.setModel(new DefaultTableModel(
 			new Object[][] {
 				{null, null, null},
 				{null, null, null},
@@ -114,7 +119,7 @@ public class Kitchen extends JFrame {
 				"Quantity", "Name", "Price"
 			}
 		));
-		scrollPane.setViewportView(table);
+		sPOrd.setViewportView(tableOrd);
 		
 		lblnpedidos = new JLabel("Nº Orders");
 		lblnpedidos.setBounds(538, 17, 59, 14);
@@ -129,25 +134,67 @@ public class Kitchen extends JFrame {
 		JButton OrderReadyB = new JButton("Order Ready");
 		OrderReadyB.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(alttc.size()>1) {
-					alttc.remove(0);
-				System.out.println(alttc.get(0).toString());
-				int size2=alttc.size();
+				if(threadtocli.getAlcm().size()>1) {
+					tu.ModTab(tableLastOrd, threadtocli.getAlcm().get(0));
+					threadtocli.getAlcm().remove(0);
+					tu.TextFColor(threadtocli.getAlcm().size(), textFnpedidos);
+				System.out.println(threadtocli.getAlcm().get(0).toString());
+				int size2=threadtocli.getAlcm().size();
 				textFnpedidos.setText(String.valueOf(size2));
-				tu.ModTab(table, alttc.get(0));
+				tu.ModTab(tableOrd, threadtocli.getAlcm().get(0));
+				
 				}
-				else if(alttc.size()==1) {
-					alttc.remove(0);
-					int size2=alttc.size();
+				else if(threadtocli.getAlcm().size()==1) {
+					tu.ModTab(tableLastOrd, threadtocli.getAlcm().get(0));
+					threadtocli.getAlcm().remove(0);
+					tu.TextFColor(threadtocli.getAlcm().size(), textFnpedidos);
+					int size2=threadtocli.getAlcm().size();
 					textFnpedidos.setText(String.valueOf(size2));
-					tu.ModTabEmpty(table);
+					tu.ModTabEmpty(tableOrd);
 				}
+				System.out.println("cunt antes "+count);
+				count++;
+				try {
+					output.writeInt(count);
+					output.flush();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+
+				System.out.println("count despues "+count);
 			}
 		});
 		OrderReadyB.setBounds(510, 66, 105, 23);
 		contentPane.add(OrderReadyB);
 		
+		JScrollPane sPLastOrd = new JScrollPane();
+		sPLastOrd.setBounds(613, 117, 135, 137);
+		contentPane.add(sPLastOrd);
+		
+		tableLastOrd = new JTable();
+		tableLastOrd.setModel(new DefaultTableModel(
+			new Object[][] {
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+				{null, null, null},
+			},
+			new String[] {
+				"Quantity", "Name", "Price"
+			}
+		));
+		sPLastOrd.setViewportView(tableLastOrd);
+		
+		JLabel lblNewLabel = new JLabel("Last Order");
+		lblNewLabel.setBounds(648, 96, 59, 14);
+		contentPane.add(lblNewLabel);
+		
 
 	}
-	
 }

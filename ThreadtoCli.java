@@ -16,7 +16,6 @@ import javax.swing.table.DefaultTableModel;
 
 public class ThreadtoCli extends Thread{
 	private ObjectInputStream inputobj;
-	//private Productos p;
 	private JTable table;
 	private JTextField textFnpedidos;
 	private ProductManager pm2=new ProductManager();
@@ -24,6 +23,7 @@ public class ThreadtoCli extends Thread{
 	private CommandManager cm= new CommandManager();
 	private ArrayList<ArrayList> alcm=cm.getAlcm();
 	private Tools tu= new Tools();
+	
 	
 
 	public ThreadtoCli (ObjectInputStream _imputobj, JTable _table, JTextField _textFnpedidos) {
@@ -42,10 +42,8 @@ public class ThreadtoCli extends Thread{
 
 			try {
 				alth=(ArrayList<Products>) inputobj.readObject();
-				System.out.println(alth.toString());
-				System.out.println("ant "+alcm.size());
 				alcm.add(alth);
-				System.out.println("dsp "+alcm.size()); 
+				tu.TextFColor(alcm.size(), textFnpedidos);
 			} catch (ClassNotFoundException | IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
